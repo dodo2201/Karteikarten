@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Krypto Karteikarten</title>
+<meta name="description" content="Karteikarten mit Spaced Repetition zur Interviewvorbereitung Krypto">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Karteikarten">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f5f3ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16181d" media="(prefers-color-scheme: dark)">
+<style>
+:root {
+  --bg: #f5f3ee; --surface: #ffffff; --surface-2: #ecE9e2; --text: #1d1f24; --muted: #6a6d75;
+  --line: #dcd8cf; --accent: #2f5d8a; --accent-ink: #ffffff;
+  --again: #b63b3b; --hard: #b7791f; --good: #2f7a4f; --easy: #2f5d8a;
+  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 6px 20px rgba(0,0,0,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16181d; --surface: #20232a; --surface-2: #2a2e37; --text: #e9e9ec; --muted: #9a9ea8;
+    --line: #353a45; --accent: #7fb0e0; --accent-ink: #10202f;
+    --again: #e07a7a; --hard: #e0b060; --good: #6cc093; --easy: #7fb0e0;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.3);
+  }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg); color: var(--text); }
+body {
+  font: 17px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh; min-height: 100dvh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.wrap { max-width: 640px; margin: 0 auto; padding: 16px; }
+header.top { display: flex; align-items: center; gap: 12px; margin: 4px 0 16px; }
+header.top h1 { font-size: 22px; margin: 0; flex: 1; letter-spacing: -.01em; }
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px;
+  border-radius: 12px; background: var(--surface); border: 1px solid var(--line); font-weight: 600; min-height: 48px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.btn.block { width: 100%; }
+.btn:disabled { opacity: .45; cursor: default; }
+.icon-btn { width: 44px; height: 44px; border-radius: 12px; display: inline-grid; place-items: center; font-size: 20px; color: var(--muted); }
+.icon-btn:active, .btn:active { transform: scale(.98); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; box-shadow: var(--shadow); margin-bottom: 16px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
+.stat b { display: block; font-size: 28px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 13px; color: var(--muted); }
+.section-title { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 20px 4px 8px; display: flex; justify-content: space-between; align-items: center; }
+.section-title button { font-size: 13px; color: var(--accent); text-transform: none; letter-spacing: 0; padding: 4px; }
+.mod { margin-bottom: 12px; }
+.mod-head { display: flex; align-items: center; gap: 8px; padding: 8px 4px; font-weight: 600; }
+.mod-head .count { margin-left: auto; font-weight: 400; font-size: 13px; color: var(--muted); }
+.deck { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); margin-bottom: 6px; width: 100%; text-align: left; }
+.deck .chk { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--line); flex: none; display: grid; place-items: center; font-size: 14px; color: var(--accent-ink); }
+.deck.on .chk { background: var(--accent); border-color: var(--accent); }
+.deck .name { flex: 1; min-width: 0; }
+.deck .name small { display: block; color: var(--muted); font-size: 13px; }
+.deck .meta { font-size: 13px; color: var(--muted); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.deck .meta .due { color: var(--accent); font-weight: 600; }
+.row { display: flex; gap: 8px; }
+.row > * { flex: 1; }
+.hint { font-size: 14px; color: var(--muted); }
+.hidden { display: none !important; }
+
+/* Lernmodus */
+.progress { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; flex: 1; }
+.progress > div { height: 100%; background: var(--accent); width: 0; transition: width .3s; }
+.study-top { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.study-top .left { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.card-scene { perspective: 1400px; margin-bottom: 16px; }
+.card { display: grid; position: relative; transition: transform .45s cubic-bezier(.2,.7,.2,1); transform-style: preserve-3d; cursor: pointer; }
+.card.flipped { transform: rotateY(180deg); }
+.face { grid-area: 1 / 1; min-height: 52vh; min-height: 52dvh; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow);
+  padding: 24px 22px; display: flex; flex-direction: column; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.face.back { transform: rotateY(180deg); }
+.face .tag { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; display: flex; justify-content: space-between; gap: 8px; }
+.face .content { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 16px 0; }
+.face.front .content { font-size: 22px; font-weight: 600; line-height: 1.35; text-align: center; }
+.face.back .q-small { font-size: 14px; color: var(--muted); margin-top: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.face.back .content { font-size: 19px; line-height: 1.5; }
+.face .tap { font-size: 13px; color: var(--muted); text-align: center; }
+.content strong { color: var(--accent); }
+.rate { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.rate button { border-radius: 12px; padding: 10px 4px; font-weight: 600; font-size: 15px; background: var(--surface); border: 1px solid var(--line); min-height: 60px; line-height: 1.2; }
+.rate button small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.rate .again { color: var(--again); } .rate .hard { color: var(--hard); } .rate .good { color: var(--good); } .rate .easy { color: var(--easy); }
+.done { text-align: center; padding: 40px 16px; }
+.done .big { font-size: 48px; }
+
+/* Ablage */
+.search { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; margin-bottom: 12px; }
+.filter { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 8px; scrollbar-width: none; }
+.filter::-webkit-scrollbar { display: none; }
+.chip { flex: none; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 14px; }
+.chip.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.item { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; width: 100%; text-align: left; display: block; }
+.item .q { font-weight: 600; }
+.item .a { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.item .info { font-size: 12px; color: var(--muted); margin-top: 6px; display: flex; gap: 8px; }
+.badge { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+.list-head { font-weight: 600; margin: 16px 4px 8px; }
+
+/* Einstellungen */
+label.field { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; }
+label.field input[type=number] { width: 80px; padding: 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: inherit; text-align: center; }
+textarea { width: 100%; min-height: 140px; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: 13px/1.4 ui-monospace, Menlo, monospace; }
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 15px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100% - 32px); }
+.toast.show { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Startseite -->
+  <section id="v-home">
+    <header class="top">
+      <h1>Krypto Karteikarten</h1>
+      <button class="icon-btn" id="go-settings" aria-label="Einstellungen">⚙︎</button>
+    </header>
+    <div class="panel">
+      <div class="stats">
+        <div class="stat"><b id="s-due">0</b><span>fällig</span></div>
+        <div class="stat"><b id="s-new">0</b><span>neu heute</span></div>
+        <div class="stat"><b id="s-learned">0</b><span>gelernt</span></div>
+      </div>
+      <div style="margin-top:16px" class="row">
+        <button class="btn primary block" id="start">Lernen</button>
+      </div>
+      <div style="margin-top:8px" class="row">
+        <button class="btn" id="go-browse">Ablage</button>
+        <button class="btn" id="cram" title="Alle Karten der gewählten Stapel durchgehen, ohne den Plan zu ändern">Freies Üben</button>
+      </div>
+    </div>
+    <div class="section-title"><span>Stapel</span><span><button id="sel-all">alle</button> · <button id="sel-none">keine</button></span></div>
+    <div id="decks"></div>
+    <p class="hint">Tipp: Wähle nur die Stapel, deren Lernsession du schon gemacht hast. So nimmst du dir nicht den Aha-Effekt.</p>
+  </section>
+
+  <!-- Lernen -->
+  <section id="v-study" class="hidden">
+    <div class="study-top">
+      <button class="icon-btn" id="study-close" aria-label="Beenden">✕</button>
+      <div class="progress"><div id="prog"></div></div>
+      <div class="left" id="left"></div>
+    </div>
+    <div id="study-card">
+      <div class="card-scene">
+        <div class="card" id="card" role="button" tabindex="0" aria-label="Karte umdrehen">
+          <div class="face front">
+            <div class="tag"><span id="f-tag"></span><span id="f-state"></span></div>
+            <div class="content" id="f-q"></div>
+            <div class="tap">Tippen zum Umdrehen</div>
+          </div>
+          <div class="face back">
+            <div class="tag"><span id="b-tag"></span></div>
+            <div class="q-small" id="b-q"></div>
+            <div class="content" id="b-a"></div>
+          </div>
+        </div>
+      </div>
+      <div class="rate hidden" id="rate">
+        <button class="again" data-g="1">Nochmal<small id="i1"></small></button>
+        <button class="hard" data-g="3">Schwer<small id="i3"></small></button>
+        <button class="good" data-g="4">Gut<small id="i4"></small></button>
+        <button class="easy" data-g="5">Leicht<small id="i5"></small></button>
+      </div>
+      <button class="btn primary block" id="show">Antwort zeigen</button>
+    </div>
+    <div class="done hidden" id="done">
+      <div class="big">✓</div>
+      <h2 id="done-title">Geschafft für heute</h2>
+      <p class="hint" id="done-text"></p>
+      <button class="btn primary" id="done-back">Zur Übersicht</button>
+    </div>
+  </section>
+
+  <!-- Ablage -->
+  <section id="v-browse" class="hidden">
+    <header class="top">
+      <button class="icon-btn" id="browse-close" aria-label="Zurück">←</button>
+      <h1>Ablage</h1>
+      <button class="btn" id="toggle-all" style="min-height:40px;padding:8px 12px;font-size:14px">Alle aufdecken</button>
+    </header>
+    <input class="search" id="search" type="search" placeholder="Suchen, z. B. Staking, Art. 60, eWpG …" autocomplete="off">
+    <div class="filter" id="filter"></div>
+    <div id="list"></div>
+  </section>
+
+  <!-- Einstellungen -->
+  <section id="v-settings" class="hidden">
+    <header class="top">
+      <button class="icon-btn" id="settings-close" aria-label="Zurück">←</button>
+      <h1>Einstellungen</h1>
+    </header>
+    <div class="panel">
+      <label class="field"><span>Neue Karten pro Tag</span><input type="number" id="newlimit" min="0" max="200" inputmode="numeric"></label>
+      <p class="hint">Wiederholungen fälliger Karten sind nicht begrenzt.</p>
+    </div>
+    <div class="panel">
+      <strong>Fortschritt sichern</strong>
+      <p class="hint">Der Fortschritt liegt nur auf diesem Gerät. Kopiere ihn ab und zu als Sicherung (z. B. in eine Notiz), oder übertrage ihn so auf ein anderes Gerät.</p>
+      <div class="row"><button class="btn" id="export">Sicherung kopieren</button><button class="btn" id="import">Sicherung einfügen</button></div>
+      <textarea id="backup" class="hidden" spellcheck="false" placeholder="Sicherung hier einfügen …"></textarea>
+      <button class="btn primary block hidden" id="import-do" style="margin-top:8px">Sicherung übernehmen</button>
+    </div>
+    <div class="panel">
+      <strong>Zurücksetzen</strong>
+      <p class="hint">Löscht den gesamten Lernfortschritt auf diesem Gerät.</p>
+      <button class="btn block" id="reset" style="color:var(--again)">Fortschritt löschen</button>
+    </div>
+    <p class="hint" id="version"></p>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="cards.js"></script>
+<script>
+(function () {
+  "use strict";
+  var KEY = "kk-krypto-v1";
+  var APP_VERSION = "1.0";
+  var $ = function (id) { return document.getElementById(id); };
+  var CARDS = window.CARDS, DECKS = window.DECKS, MODULES = window.MODULES;
+  var cardById = {}; CARDS.forEach(function (c) { cardById[c.id] = c; });
+  var deckById = {}; DECKS.forEach(function (d) { deckById[d.id] = d; });
+
+  // ── Speicher ──
+  var memoryStore = null;
+  function load() {
+    var s = null;
+    try { s = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+    if (!s && memoryStore) s = memoryStore;
+    s = s || {};
+    s.cards = s.cards || {};
+    s.decks = s.decks || DECKS.map(function (d) { return d.id; });
+    s.newLimit = typeof s.newLimit === "number" ? s.newLimit : 15;
+    s.newLog = s.newLog || {};
+    return s;
+  }
+  function save() {
+    memoryStore = S;
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
+  }
+  var S = load();
+  if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist(); } catch (e) {} }
+
+  // ── Datum ──
+  function today() { var d = new Date(); return ymd(d); }
+  function ymd(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function addDays(n) { var d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + n); return ymd(d); }
+  function daysUntil(s) { var a = new Date(today() + "T12:00:00"), b = new Date(s + "T12:00:00"); return Math.round((b - a) / 864e5); }
+
+  // ── SM-2 ──
+  // Noten: 1 = Nochmal, 3 = Schwer, 4 = Gut, 5 = Leicht
+  function schedule(st, q) {
+    st = st ? Object.assign({}, st) : { ef: 2.5, n: 0, iv: 0 };
+    st.ef = Math.max(1.3, st.ef + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)));
+    if (q < 3) {
+      st.n = 0; st.iv = 0; st.lapses = (st.lapses || 0) + 1;
+      st.due = today();
+    } else {
+      if (st.n === 0) st.iv = q === 5 ? 4 : 1;
+      else if (st.n === 1) st.iv = q === 3 ? 4 : (q === 5 ? 8 : 6);
+      else st.iv = Math.max(st.iv + 1, Math.round(st.iv * st.ef * (q === 3 ? 0.8 : q === 5 ? 1.3 : 1)));
+      st.n += 1;
+      st.due = addDays(st.iv);
+    }
+    st.last = today();
+    return st;
+  }
+  function fmtIv(st) {
+    if (!st.iv) return "gleich";
+    if (st.iv < 30) return st.iv + " T";
+    if (st.iv < 365) return Math.round(st.iv / 30) + " Mon";
+    return (st.iv / 365).toFixed(1).replace(".", ",") + " J";
+  }
+
+  // ── Auswahl & Zählung ──
+  function selected(c) { return S.decks.indexOf(c.d) >= 0; }
+  function isDue(c) { var st = S.cards[c.id]; return st && st.due <= today(); }
+  function isNew(c) { return !S.cards[c.id]; }
+  function newDoneToday() { return S.newLog[today()] || 0; }
+  function newAllowed() { return Math.max(0, S.newLimit - newDoneToday()); }
+
+  // ── Rendern: Start ──
+  function renderHome() {
+    var due = 0, fresh = 0, learned = 0;
+    CARDS.forEach(function (c) {
+      var st = S.cards[c.id];
+      if (st && st.n > 0) learned++;
+      if (!selected(c)) return;
+      if (isDue(c)) due++; else if (isNew(c)) fresh++;
+    });
+    var newToday = Math.min(fresh, newAllowed());
+    $("s-due").textContent = due;
+    $("s-new").textContent = newToday;
+    $("s-learned").textContent = learned;
+    $("start").disabled = due + newToday === 0;
+    $("start").textContent = due + newToday === 0 ? "Für heute nichts mehr fällig" : "Lernen (" + (due + newToday) + ")";
+
+    var html = "";
+    MODULES.forEach(function (m) {
+      var decks = DECKS.filter(function (d) { return d.m === m.m; });
+      var total = CARDS.filter(function (c) { return deckById[c.d].m === m.m; }).length;
+      html += '<div class="mod"><div class="mod-head">Modul ' + m.m + ": " + esc(m.title) + '<span class="count">' + total + " Karten</span></div>";
+      decks.forEach(function (d) {
+        var cs = CARDS.filter(function (c) { return c.d === d.id; });
+        var dDue = cs.filter(isDue).length, dNew = cs.filter(isNew).length;
+        var on = S.decks.indexOf(d.id) >= 0;
+        html += '<button class="deck' + (on ? " on" : "") + '" data-deck="' + d.id + '" aria-pressed="' + on + '">' +
+          '<span class="chk">' + (on ? "✓" : "") + "</span>" +
+          '<span class="name">' + esc(d.title) + "<small>Teil " + d.id + " · " + cs.length + " Karten</small></span>" +
+          '<span class="meta">' + (dDue ? '<span class="due">' + dDue + " fällig</span><br>" : "") + dNew + " neu</span></button>";
+      });
+      html += "</div>";
+    });
+    $("decks").innerHTML = html;
+  }
+  $("decks").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-deck]"); if (!b) return;
+    var id = b.getAttribute("data-deck"), i = S.decks.indexOf(id);
+    if (i >= 0) S.decks.splice(i, 1); else S.decks.push(id);
+    save(); renderHome();
+  });
+  $("sel-all").onclick = function () { S.decks = DECKS.map(function (d) { return d.id; }); save(); renderHome(); };
+  $("sel-none").onclick = function () { S.decks = []; save(); renderHome(); };
+
+  // ── Lernsitzung ──
+  var queue = [], current = null, total = 0, doneCount = 0, cramMode = false, flipped = false;
+  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+  function startSession(cram) {
+    cramMode = !!cram;
+    if (cramMode) {
+      queue = shuffle(CARDS.filter(selected).map(function (c) { return c.id; }));
+    } else {
+      var due = shuffle(CARDS.filter(function (c) { return selected(c) && isDue(c); }).map(function (c) { return c.id; }));
+      var fresh = CARDS.filter(function (c) { return selected(c) && isNew(c); }).slice(0, newAllowed()).map(function (c) { return c.id; });
+      queue = due.concat(fresh);
+    }
+    if (!queue.length) { toast(cramMode ? "Keine Stapel ausgewählt" : "Nichts fällig"); return; }
+    total = queue.length; doneCount = 0;
+    show("v-study");
+    $("study-card").classList.remove("hidden"); $("done").classList.add("hidden");
+    next();
+  }
+  function next() {
+    if (!queue.length) return finish();
+    current = cardById[queue.shift()];
+    flipped = false;
+    var card = $("card");
+    card.style.transition = "none"; card.classList.remove("flipped"); void card.offsetWidth; card.style.transition = "";
+    var d = deckById[current.d];
+    var st = S.cards[current.id];
+    $("f-tag").textContent = "Teil " + d.id + " · " + d.title;
+    $("b-tag").textContent = "Teil " + d.id + " · " + d.title;
+    $("f-state").textContent = cramMode ? "freies Üben" : (!st ? "neu" : (st.n === 0 ? "nochmal" : "Wiederholung"));
+    $("f-q").innerHTML = fmt(current.q);
+    $("b-q").innerHTML = fmt(current.q);
+    $("b-a").innerHTML = fmt(current.a);
+    $("rate").classList.add("hidden"); $("show").classList.remove("hidden");
+    $("prog").style.width = (100 * doneCount / total) + "%";
+    $("left").textContent = (queue.length + 1) + " übrig";
+  }
+  function flip() {
+    if (!current) return;
+    flipped = !flipped;
+    $("card").classList.toggle("flipped", flipped);
+    if (flipped) {
+      $("show").classList.add("hidden"); $("rate").classList.remove("hidden");
+      var st = S.cards[current.id];
+      [1, 3, 4, 5].forEach(function (g) { $("i" + g).textContent = cramMode ? "" : fmtIv(schedule(st, g)); });
+    }
+  }
+  function rate(g) {
+    if (!current || !flipped) return;
+    if (!cramMode) {
+      var wasNew = !S.cards[current.id];
+      S.cards[current.id] = schedule(S.cards[current.id], g);
+      if (wasNew) S.newLog[today()] = newDoneToday() + 1;
+      // Log alter Tage aufräumen
+      Object.keys(S.newLog).forEach(function (k) { if (k < addDays(-7)) delete S.newLog[k]; });
+      save();
+    }
+    if (g < 3) {
+      // Nochmal: am Ende der Sitzung erneut zeigen
+      var pos = Math.min(queue.length, 3 + Math.floor(Math.random() * 3));
+      queue.splice(queue.length > pos ? pos : queue.length, 0, current.id);
+      total++;
+    }
+    doneCount++;
+    next();
+  }
+  function finish() {
+    current = null;
+    $("prog").style.width = "100%"; $("left").textContent = "";
+    $("study-card").classList.add("hidden"); $("done").classList.remove("hidden");
+    if (cramMode) {
+      $("done-title").textContent = "Durchgang beendet";
+      $("done-text").textContent = "Freies Üben verändert deinen Wiederholungsplan nicht.";
+    } else {
+      var nextDue = null;
+      CARDS.forEach(function (c) { var st = S.cards[c.id]; if (selected(c) && st && st.due > today() && (!nextDue || st.due < nextDue)) nextDue = st.due; });
+      $("done-title").textContent = "Geschafft für heute";
+      $("done-text").textContent = nextDue ? "Nächste Wiederholung in " + daysUntil(nextDue) + (daysUntil(nextDue) === 1 ? " Tag." : " Tagen.") : "";
+    }
+  }
+  $("card").addEventListener("click", flip);
+  $("show").addEventListener("click", flip);
+  $("rate").addEventListener("click", function (e) { var b = e.target.closest("[data-g]"); if (b) rate(+b.getAttribute("data-g")); });
+  $("start").onclick = function () { startSession(false); };
+  $("cram").onclick = function () { startSession(true); };
+  $("study-close").onclick = $("done-back").onclick = function () { current = null; show("v-home"); };
+  document.addEventListener("keydown", function (e) {
+    if ($("v-study").classList.contains("hidden") || !current) return;
+    if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (!flipped) flip(); }
+    else if (flipped && { "1": 1, "2": 3, "3": 4, "4": 5 }[e.key]) rate({ "1": 1, "2": 3, "3": 4, "4": 5 }[e.key]);
+  });
+
+  // ── Ablage ──
+  var browseFilter = "all", openAll = false;
+  function renderFilter() {
+    var html = '<button class="chip' + (browseFilter === "all" ? " on" : "") + '" data-f="all">Alle</button>';
+    DECKS.forEach(function (d) { html += '<button class="chip' + (browseFilter === d.id ? " on" : "") + '" data-f="' + d.id + '">' + d.id + "</button>"; });
+    $("filter").innerHTML = html;
+  }
+  function renderList() {
+    var term = $("search").value.trim().toLowerCase();
+    var html = "", lastDeck = null, n = 0;
+    CARDS.forEach(function (c) {
+      if (browseFilter !== "all" && c.d !== browseFilter) return;
+      if (term && (c.q + " " + c.a).toLowerCase().indexOf(term) < 0) return;
+      if (c.d !== lastDeck) { lastDeck = c.d; html += '<div class="list-head">Teil ' + c.d + ": " + esc(deckById[c.d].title) + "</div>"; }
+      var st = S.cards[c.id], badge;
+      if (!st) badge = "neu";
+      else if (st.due <= today()) badge = "fällig";
+      else badge = "in " + daysUntil(st.due) + " T";
+      html += '<button class="item" data-id="' + c.id + '"><div class="q">' + fmt(c.q) + "</div>" +
+        '<div class="a' + (openAll ? "" : " hidden") + '">' + fmt(c.a) + "</div>" +
+        '<div class="info"><span class="badge">' + badge + "</span></div></button>";
+      n++;
+    });
+    $("list").innerHTML = n ? html : '<p class="hint">Keine Karte gefunden.</p>';
+  }
+  $("filter").addEventListener("click", function (e) { var b = e.target.closest("[data-f]"); if (!b) return; browseFilter = b.getAttribute("data-f"); renderFilter(); renderList(); });
+  $("list").addEventListener("click", function (e) { var b = e.target.closest(".item"); if (b) b.querySelector(".a").classList.toggle("hidden"); });
+  $("search").addEventListener("input", renderList);
+  $("toggle-all").onclick = function () { openAll = !openAll; this.textContent = openAll ? "Alle zudecken" : "Alle aufdecken"; renderList(); };
+  $("go-browse").onclick = function () { renderFilter(); renderList(); show("v-browse"); };
+  $("browse-close").onclick = function () { show("v-home"); };
+
+  // ── Einstellungen ──
+  $("go-settings").onclick = function () {
+    $("newlimit").value = S.newLimit;
+    $("backup").classList.add("hidden"); $("import-do").classList.add("hidden");
+    $("version").textContent = "Version " + APP_VERSION + " · " + CARDS.length + " Karten";
+    show("v-settings");
+  };
+  $("settings-close").onclick = function () { show("v-home"); };
+  $("newlimit").addEventListener("change", function () {
+    var v = parseInt(this.value, 10); if (isNaN(v) || v < 0) v = 0; if (v > 200) v = 200;
+    S.newLimit = v; this.value = v; save();
+  });
+  $("export").onclick = function () {
+    var data = JSON.stringify({ app: "kk-krypto", v: 1, at: new Date().toISOString(), state: S });
+    var ta = $("backup"); ta.value = data; ta.classList.remove("hidden"); $("import-do").classList.add("hidden");
+    var done = function () { toast("Sicherung kopiert"); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(data).then(done, function () { ta.select(); toast("Text markiert, bitte kopieren"); });
+    else { ta.select(); toast("Text markiert, bitte kopieren"); }
+  };
+  $("import").onclick = function () { var ta = $("backup"); ta.value = ""; ta.classList.remove("hidden"); $("import-do").classList.remove("hidden"); ta.focus(); };
+  $("import-do").onclick = function () {
+    try {
+      var o = JSON.parse($("backup").value);
+      if (!o || o.app !== "kk-krypto" || !o.state || !o.state.cards) throw new Error();
+      if (!confirm("Aktuellen Fortschritt durch die Sicherung ersetzen?")) return;
+      localStorage.setItem(KEY, JSON.stringify(o.state));
+      S = load(); save(); toast("Sicherung übernommen"); show("v-home");
+    } catch (e) { toast("Das ist keine gültige Sicherung"); }
+  };
+  $("reset").onclick = function () {
+    if (!confirm("Wirklich den gesamten Lernfortschritt löschen?")) return;
+    S.cards = {}; S.newLog = {}; save(); toast("Fortschritt gelöscht"); show("v-home");
+  };
+
+  // ── Hilfsfunktionen ──
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (ch) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]; }); }
+  function fmt(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\n/g, "<br>"); }
+  function show(id) {
+    ["v-home", "v-study", "v-browse", "v-settings"].forEach(function (v) { $(v).classList.toggle("hidden", v !== id); });
+    if (id === "v-home") renderHome();
+    window.scrollTo(0, 0);
+  }
+  var toastTimer;
+  function toast(msg) { var t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2200); }
+
+  // Beim Zurückkehren in die App (neuer Tag) Übersicht aktualisieren
+  document.addEventListener("visibilitychange", function () { if (!document.hidden && !$("v-home").classList.contains("hidden")) renderHome(); });
+
+  show("v-home");
+
+  // ── Offline (Service Worker) ──
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+  }
+})();
+</script>
+</body>
+</html>
