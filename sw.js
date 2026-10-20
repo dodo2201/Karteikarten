@@ -1,5 +1,5 @@
 // Offline-Cache. Bei Inhaltsänderungen (z. B. neue Karten) VERSION erhöhen.
-var VERSION = "kk-krypto-v12";
+var VERSION = "kk-krypto-v13";
 var FILES = ["./", "index.html", "cards.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png"];
 
 self.addEventListener("install", function (e) {
